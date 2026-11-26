@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Tasks</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      padding: 20px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 420px;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+    }
+
+    h1 {
+      text-align: center;
+      color: #4a3f8a;
+      margin-bottom: 6px;
+      font-size: 2rem;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #888;
+      font-size: 0.9rem;
+      margin-bottom: 24px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    #taskInput {
+      flex: 1;
+      padding: 12px 16px;
+      border: 2px solid #e0e0f0;
+      border-radius: 12px;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    #taskInput:focus { border-color: #764ba2; }
+
+    #addBtn {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    #addBtn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(118, 75, 162, 0.4);
+    }
+
+    #taskList { list-style: none; }
+
+    .task {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      background: #f7f6ff;
+      border-radius: 12px;
+      margin-bottom: 10px;
+      animation: slideIn 0.3s ease;
+    }
+
+    .task input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      accent-color: #764ba2;
+      cursor: pointer;
+    }
+
+    .task span {
+      flex: 1;
+      color: #333;
+      word-break: break-word;
+    }
+
+    .task.done span {
+      text-decoration: line-through;
+      color: #aaa;
+    }
+
+    .delete-btn {
+      background: none;
+      border: none;
+      color: #e57373;
+      font-size: 1.3rem;
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+
+    .delete-btn:hover { transform: scale(1.2); }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 18px;
+      font-size: 0.85rem;
+      color: #888;
+    }
+
+    .empty {
+      text-align: center;
+      color: #bbb;
+      padding: 20px 0;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>My Tasks</h1>
+    <p class="subtitle">Stay organized, one task at a time</p>
+
+    <div class="input-row">
+      <input type="text" id="taskInput" placeholder="What needs to be done?">
+      <button id="addBtn">Add</button>
+    </div>
+
+    <ul id="taskList"></ul>
+
+    <div class="footer">
+      <span id="counter">0 tasks left</span>
+      <span id="clearDone" style="cursor:pointer; color:#764ba2;">Clear completed</span>
+    </div>
+  </div>
+
+  <script>
+    const input = document.getElementById("taskInput");
+    const addBtn = document.getElementById("addBtn");
+    const list = document.getElementById("taskList");
+    const counter = document.getElementById("counter");
+    const clearDone = document.getElementById("clearDone");
+
+    let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+
+    function save() {
+      localStorage.setItem("tasks", JSON.stringify(tasks));
+    }
+
+    function render() {
+      list.innerHTML = "";
+
+      if (tasks.length === 0) {
+        list.innerHTML = '<p class="empty">No tasks yet. Add one above!</p>';
+      }
+
+      tasks.forEach((task, index) => {
+        const li = document.createElement("li");
+        li.className = "task" + (task.done ? " done" : "");
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = task.done;
+        checkbox.addEventListener("change", () => {
+          tasks[index].done = checkbox.checked;
+          save();
+          render();
+        });
+
+        const text = document.createElement("span");
+        text.textContent = task.text;
+
+        const del = document.createElement("button");
+        del.className = "delete-btn";
+        del.textContent = "×";
+        del.addEventListener("click", () => {
+          tasks.splice(index, 1);
+          save();
+          render();
+        });
+
+        li.append(checkbox, text, del);
+        list.appendChild(li);
+      });
+
+      const left = tasks.filter(t => !t.done).length;
+      counter.textContent = `${left} task${left !== 1 ? "s" : ""} left`;
+    }
+
+    function addTask() {
+      const text = input.value.trim();
+      if (!text) return;
+      tasks.push({ text, done: false });
+      input.value = "";
+      save();
+      render();
+    }
+
+    addBtn.addEventListener("click", addTask);
+    input.addEventListener("keydown", e => {
+      if (e.key === "Enter") addTask();
+    });
+
+    clearDone.addEventListener("click", () => {
+      tasks = tasks.filter(t => !t.done);
+      save();
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>
